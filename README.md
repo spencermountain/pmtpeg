@@ -24,11 +24,11 @@ const pm = fromFile('./examples/edmonton.pmtiles');
 const header = await pm.header();
 const stats = await pm.stats();
 
-// tile address list — pass { expand: true } to count run-length runs individually
-const tiles = await pm.tiles({ expand: true });
+// array of all tiles — pass { expand: true } to count run-length runs individually
+const tiles = await pm.allTiles({ expand: true });
 
-// look up a single tile by coordinate — same row shape as tiles(), or null if absent
-const one = await pm.tileAt(94, 166, 9); // (x, y, z)
+// look up a single tile by coordinate — same row shape as allTiles(), or null if absent
+const one = await pm.tileAt(9, 94, 166); // (z, x, y)
 
 // decode the 40th tile. MVT archives return per-layer GeoJSON ({ z, x, y, layers });
 // raster archives (png/jpeg/webp/avif) return decompressed bytes ({ z, x, y, format, data }).
@@ -48,6 +48,37 @@ archive on a remote URL is never downloaded whole.
 
 Tiles and directories must be gzip-compressed (the PMTiles default); brotli and
 zstd are not supported in the browser.
+
+### Looking up a single tile
+
+`tileAt(z, x, y)` finds the one tile at a coordinate without expanding the whole
+list. It returns the same row shape as `allTiles()`, or `null` if that coordinate
+isn't stored in the archive — then hand the row to `getTile()` to decode it:
+
+```js
+import { fromUrl } from 'pmtpeg';
+
+const pm = fromUrl('https://example.com/edmonton.pmtiles');
+
+const row = await pm.tileAt(9, 94, 166); // (z, x, y)
+if (!row) {
+  console.log('no tile there');
+} else {
+  console.log(row);
+  // { z: 9, x: 94, y: 166, absOffset: 1763764, bytes: 38999, runLength: 1, shared: false }
+
+  const tile = await pm.getTile(row); // fetches + decodes just this tile
+  console.log(Object.keys(tile.layers)); // ['boundaries','earth','landuse','places','roads','water']
+}
+
+await pm.close();
+```
+
+`tileAt` descends the directory tree (root → leaf) rather than reading the whole
+index, so a cold lookup is just a couple of small range reads regardless of how
+large the archive is. Directories are cached, so nearby lookups reuse them and
+cost nothing beyond the single range request `getTile()` makes per tile — handy
+for fetching tiles on demand as a map pans.
 
 ### Details
 ```jsonc

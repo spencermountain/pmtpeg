@@ -13,21 +13,17 @@ const pm = fromUrl(examples[4]);
 // const pm = fromFile('./examples/edmonton.pmtiles');
 // const pm = fromUrl('https://pmtiles.io/stamen_toner(raster)CC-BY+ODbL_z3.pmtiles');
 
-console.log('header', await pm.header());
-// console.log(await pm.stats());
+console.log(await pm.stats());
+const tiles = await pm.allTiles({ expand: false });
+console.log(tiles[40]);
 
-const tiles = await pm.tiles({ expand: false });
-// console.log(tiles[40]);
-
-const tile = await pm.getTile(tiles[40]);
-console.log(tile);
+// const tile = await pm.getTile(tiles[40]);
+// console.log(tile);
 
 // console.log(await pm.pyramid());
 
-console.log('start');
-const tileAt = await pm.tileAt(9, 82, 177,);
-console.log(tileAt);
-console.log('done');
+const tileAt = await pm.tileAt(9, 82, 177);
+console.log({ tileAt });
 
 await pm.close();
 console.log('closed');
