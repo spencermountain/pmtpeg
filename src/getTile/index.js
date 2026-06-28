@@ -2,13 +2,10 @@
 // MVT tiles are decoded to per-layer GeoJSON; raster tiles return raw bytes.
 // Deps: npm i @mapbox/vector-tile pbf
 import { decompressTile } from './decompress.js';
+import { tileTypeName } from '../parse/tile-type.js';
 import { VectorTile } from '@mapbox/vector-tile';
 import { PbfReader } from 'pbf';
 
-const formatTypes = { 0: 'unknown', 1: 'mvt', 2: 'png', 3: 'jpeg', 4: 'webp', 5: 'avif' };
-const tileFormat = (t) => {
-  return formatTypes[t] ?? `type${t}`;
-}
 /**
  * @param {{ read(offset:number,length:number):Promise<Uint8Array> }} reader
  * @param {number} compression  tileCompression byte from the header (1=none 2=gzip)
@@ -25,7 +22,7 @@ export const readTile = async (reader, compression, tileType, tile) => {
   const data = await decompressTile(raw, compression);
 
   if (tileType !== 1) {
-    return { z, x, y, format: tileFormat(tileType), data };
+    return { z, x, y, format: tileTypeName(tileType), data };
   }
 
   const vt = new VectorTile(new PbfReader(data));

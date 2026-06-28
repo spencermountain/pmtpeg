@@ -3,15 +3,13 @@ import { enumerateTiles } from './parse/get-tiles/index.js';
 import tileIdToZxy from './parse/_hilbert.js';
 import { readTile } from './getTile/index.js';
 import getPyramid from './getPyramid/index.js';
+import { tileTypeName } from './parse/tile-type.js';
 
 const HEADER_BYTES = 127;
 
-const tileTypeName = (t) =>
-  ({ 0: 'unknown', 1: 'mvt(pbf)', 2: 'png', 3: 'jpeg', 4: 'webp', 5: 'avif' }[t] ?? `type${t}`);
-
 /**
- * PMTiles archive API. The header and directory walk are read once on first use
- * and cached for the lifetime of the archive.
+ * PMTiles API. The header and directory walk are read once on first use
+ * and cached for the lifetime of the class.
  * @param {{ read(offset:number,length:number):Promise<Uint8Array>, close():Promise<void> }} reader
  */
 class PmTile {
@@ -21,7 +19,8 @@ class PmTile {
     this._entriesP = null;
   }
 
-  _loadHeader() {
+  /** Parsed 127-byte header plus tileTypeName and dedupRatio. */
+  header() {
     if (this._headerP == null) {
       this._headerP = (async () => {
         const buf = await this.reader.read(0, HEADER_BYTES);
@@ -36,19 +35,23 @@ class PmTile {
     return this._headerP;
   }
 
-  _loadEntries() {
+  entries() {
     if (this._entriesP == null) {
       this._entriesP = (async () => {
-        const h = await this._loadHeader();
+        const h = await this.header();
         return enumerateTiles((o, l) => this.reader.read(o, l), h);
       })();
     }
     return this._entriesP;
   }
 
-  async _buildTiles(expand) {
-    const h = await this._loadHeader();
-    const entries = await this._loadEntries();
+  /**
+   * Tile address list. Pass `{ expand: true }` to emit one row per tile
+   * covered by run-length entries (needed for an accurate pyramid).
+   */
+  async tiles({ expand = false } = {}) {
+    const h = await this.header();
+    const entries = await this.entries();
     const tiles = [];
     for (const e of entries) {
       const count = expand ? e.runLength : 1;
@@ -68,22 +71,9 @@ class PmTile {
     return tiles;
   }
 
-  /** Parsed 127-byte header plus tileTypeName and dedupRatio. */
-  header() {
-    return this._loadHeader();
-  }
-
-  /**
-   * Tile address list. Pass `{ expand: true }` to emit one row per tile
-   * covered by run-length entries (needed for an accurate pyramid).
-   */
-  tiles({ expand = false } = {}) {
-    return this._buildTiles(expand);
-  }
-
   /** Directory-walk counts: entries, shared runs, expanded tile total. */
   async stats() {
-    const entries = await this._loadEntries();
+    const entries = await this.entries();
     return {
       entryCount: entries.length,
       sharedEntryCount: entries.filter((e) => e.runLength > 1).length,
@@ -93,7 +83,7 @@ class PmTile {
 
   /** Per-zoom tile counts with x/y extent and geographic bbox. */
   async pyramid() {
-    return getPyramid(await this._buildTiles(true));
+    return getPyramid(await this.tiles({ expand: true }));
   }
 
   /**
@@ -101,7 +91,7 @@ class PmTile {
    * MVT archives return per-layer GeoJSON; raster archives return decompressed bytes.
    */
   async getTile(tile) {
-    const h = await this._loadHeader();
+    const h = await this.header();
     return readTile(this.reader, h.tileCompression, h.tileType, tile);
   }
 

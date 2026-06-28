@@ -18,7 +18,7 @@ import { fromFile, fromUrl } from 'pmtpeg';
 // open from a local file (Node)...
 const pm = fromFile('./examples/edmonton.pmtiles');
 // ...or from a URL via HTTP range requests (browser or Node)
-// const pm = pmtpeg.fromUrl('https://example.com/edmonton.pmtiles');
+// const pm = fromUrl('https://example.com/edmonton.pmtiles');
 
 // either way, the same API:
 const header = await pm.header();
@@ -27,7 +27,8 @@ const stats = await pm.stats();
 // tile address list — pass { expand: true } to count run-length runs individually
 const tiles = await pm.tiles({ expand: true });
 
-// decode the 40th tile into per-layer GeoJSON
+// decode the 40th tile. MVT archives return per-layer GeoJSON ({ z, x, y, layers });
+// raster archives (png/jpeg/webp/avif) return decompressed bytes ({ z, x, y, format, data }).
 const tile = await pm.getTile(tiles[40]);
 console.log(tile);
 
@@ -101,7 +102,7 @@ header
   "maxZoom": 15,
 
   // Human-readable form of tileType, derived from the byte above.
-  "tileTypeName": "mvt(pbf)",
+  "tileTypeName": "mvt",
   // addressedTileCount / tileContentCount: ~1.12 addressed tiles per stored blob,
   // i.e. deduplication saved ~10% of tiles. Modest here; basemaps with lots of
   // empty ocean tiles see much higher ratios.
