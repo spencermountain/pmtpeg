@@ -1,7 +1,7 @@
 {
   "name": "pmtpeg",
-  "version": "1.0.0",
-  "description": "",
+  "version": "0.0.1",
+  "description": "Utility library for pmtile map files",
   "type": "module",
   "exports": {
     ".": "./build/pmtpeg.js"

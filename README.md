@@ -13,7 +13,7 @@ This library only supports v3 of this spec
 `npm install pmtpeg`
 
 ```js
-import { parseFile, getTile } from 'pmtpeg';
+import { parseFile, getTile, getPyramid } from 'pmtpeg';
 
 const myFile = './examples/edmonton.pmtiles';
 const { header, stats, tiles } = await parseFile(myFile, { expand: true });
@@ -21,6 +21,10 @@ const { header, stats, tiles } = await parseFile(myFile, { expand: true });
 // get the 40th tile
 const tile = await getTile(myFile, tiles[40]);
 console.log(tile);
+
+// counts for individual zoom levels and their extents
+const pyramid = getPyramid(tiles);
+console.log(pyramid);
 
 ```
 
@@ -63,7 +67,7 @@ header
   // (e.g. blank ocean) are deduplicated to a single blob.
   "tileContentCount": 65414,
 
-  // Compression used for the directories and JSON metadata. 2 = gzip.
+  // Compression used for the directories and JSON metadata.
   // (1=none, 2=gzip, 3=brotli, 4=zstd)
   "internalCompression": 2,
   // Compression applied to each tile blob. 2 = gzip, so MVT tiles must be
@@ -113,10 +117,10 @@ tiles
   // Zoom level of this tile. z9 covers a region a few hundred km across —
   // roughly metro-area scale.
   "z": 9,
-  // Tile column at this zoom (0 to 2^9-1 = 0–511), counting east from the
+  // Global Tile column at this zoom (0 to 2^9-1 = 0–511), counting east from the
   // antimeridian.
   "x": 94,
-  // Tile row at this zoom (0–511), counting south from the north edge (XYZ
+  // Global Tile row at this zoom (0–511), counting south from the north edge (XYZ
   // scheme, y=0 at top).
   "y": 166,
 

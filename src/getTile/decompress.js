@@ -1,16 +1,18 @@
-import { gunzipSync, brotliDecompressSync, inflateSync } from 'node:zlib';
+// Browser + Node 18+ gzip via the native DecompressionStream API (no node:zlib).
+const inflate = async (buf, format) => {
+  const ds = new DecompressionStream(format); // 'gzip' | 'deflate' | 'deflate-raw'
+  const stream = new Response(buf).body.pipeThrough(ds);
+  return new Uint8Array(await new Response(stream).arrayBuffer());
+};
 
 // tileCompression byte in the header at offset 98: 1=none 2=gzip 3=brotli 4=zstd
-export const decompressTile = (buf, compression) => {
+export const decompressTile = async (buf, compression) => {
   switch (compression) {
     case 1: return buf;
-    case 2: return gunzipSync(buf);
-    case 3: return brotliDecompressSync(buf);
-    case 4: throw new Error('zstd tile compression not supported by node:zlib');
-    default:
-      try { return gunzipSync(buf); } catch { }
-      try { return inflateSync(buf); } catch { }
-      return buf; // assume raw
+    case 2: return inflate(buf, 'gzip');
+    case 3: throw new Error('brotli tile compression not supported in browser — re-export as gzip');
+    case 4: throw new Error('zstd tile compression not supported in browser — re-export as gzip');
+    default: throw new Error(`unknown tile compression byte: ${compression}`);
   }
 };
 

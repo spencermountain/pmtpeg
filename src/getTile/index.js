@@ -18,7 +18,7 @@ const readTile = async (filePath, tile) => {
 
     const raw = Buffer.alloc(bytes);
     await fh.read(raw, 0, bytes, absOffset);
-    const pbf = decompressTile(raw, compression);
+    const pbf = await decompressTile(raw, compression);
 
     const vt = new VectorTile(new PbfReader(pbf));
     const layers = {};

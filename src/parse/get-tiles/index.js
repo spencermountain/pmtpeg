@@ -7,7 +7,7 @@ export const enumerateTiles = async (readRange, header) => {
 
   const walk = async (offset, length) => {
     const raw = await readRange(offset, length);
-    const entries = deserializeDirectory(decompress(raw, header.internalCompression));
+    const entries = deserializeDirectory(await decompress(raw, header.internalCompression));
     for (const e of entries) {
       if (e.runLength === 0) {
         await walk(header.leafDirOffset + Number(e.offset), e.length);

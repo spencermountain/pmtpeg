@@ -1,5 +1,5 @@
-import parsePmtiles from './parse/index.js';
-import readTile from './getTile/index.js';
+import parseFile from './parse/index.js';
+import getTile from './getTile/index.js';
+import getPyramid from './getPyramid/index.js';
 
-export const parseFile = parsePmtiles;
-export const getTile = readTile;
+export { parseFile, getTile, getPyramid };
