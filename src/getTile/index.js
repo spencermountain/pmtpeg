@@ -1,21 +1,34 @@
-// Read one MVT tile out of a PMTiles archive and return it as parsed GeoJSON.
+// Read one tile out of a PMTiles archive.
+// MVT tiles are decoded to per-layer GeoJSON; raster tiles return raw bytes.
 // Deps: npm i @mapbox/vector-tile pbf
 import { decompressTile } from './decompress.js';
 import { VectorTile } from '@mapbox/vector-tile';
 import { PbfReader } from 'pbf';
 
+const formatTypes = { 0: 'unknown', 1: 'mvt', 2: 'png', 3: 'jpeg', 4: 'webp', 5: 'avif' };
+const tileFormat = (t) => {
+  return formatTypes[t] ?? `type${t}`;
+}
 /**
  * @param {{ read(offset:number,length:number):Promise<Uint8Array> }} reader
  * @param {number} compression  tileCompression byte from the header (1=none 2=gzip)
+ * @param {number} tileType     tileType byte from the header (1=mvt 2=png …)
  * @param {{z:number,x:number,y:number,absOffset:number,bytes:number}} tile
- * @returns {Promise<{z,x,y,layers:Object<string,{type:'FeatureCollection',features:Array}>}>}
+ * @returns {Promise<
+ *   | {z:number,x:number,y:number,layers:Object<string,{type:'FeatureCollection',features:Array}>}
+ *   | {z:number,x:number,y:number,format:string,data:Uint8Array}
+ * >}
  */
-export const readTile = async (reader, compression, tile) => {
+export const readTile = async (reader, compression, tileType, tile) => {
   const { z, x, y, absOffset, bytes } = tile;
   const raw = await reader.read(absOffset, bytes);
-  const pbf = await decompressTile(raw, compression);
+  const data = await decompressTile(raw, compression);
 
-  const vt = new VectorTile(new PbfReader(pbf));
+  if (tileType !== 1) {
+    return { z, x, y, format: tileFormat(tileType), data };
+  }
+
+  const vt = new VectorTile(new PbfReader(data));
   const layers = {};
   for (const name of Object.keys(vt.layers)) {
     const layer = vt.layers[name];

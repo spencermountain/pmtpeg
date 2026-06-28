@@ -13,10 +13,10 @@ This library only supports v3 of this spec
 `npm install pmtpeg`
 
 ```js
-import pmtpeg from 'pmtpeg';
+import { fromFile, fromUrl } from 'pmtpeg';
 
 // open from a local file (Node)...
-const pm = pmtpeg.fromFile('./examples/edmonton.pmtiles');
+const pm = fromFile('./examples/edmonton.pmtiles');
 // ...or from a URL via HTTP range requests (browser or Node)
 // const pm = pmtpeg.fromUrl('https://example.com/edmonton.pmtiles');
 

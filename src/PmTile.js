@@ -14,36 +14,41 @@ const tileTypeName = (t) =>
  * and cached for the lifetime of the archive.
  * @param {{ read(offset:number,length:number):Promise<Uint8Array>, close():Promise<void> }} reader
  */
-class Pmtile {
-  #headerP = null;
-  #entriesP = null;
-
+class PmTile {
   constructor(reader) {
     this.reader = reader;
+    this._headerP = null;
+    this._entriesP = null;
   }
 
-  #loadHeader() {
-    return (this.#headerP ??= (async () => {
-      const buf = await this.reader.read(0, HEADER_BYTES);
-      const h = parseHeader(buf);
-      return {
-        ...h,
-        tileTypeName: tileTypeName(h.tileType),
-        dedupRatio: h.addressedTileCount / Math.max(1, h.tileContentCount),
-      };
-    })());
+  _loadHeader() {
+    if (this._headerP == null) {
+      this._headerP = (async () => {
+        const buf = await this.reader.read(0, HEADER_BYTES);
+        const h = parseHeader(buf);
+        return {
+          ...h,
+          tileTypeName: tileTypeName(h.tileType),
+          dedupRatio: h.addressedTileCount / Math.max(1, h.tileContentCount),
+        };
+      })();
+    }
+    return this._headerP;
   }
 
-  #loadEntries() {
-    return (this.#entriesP ??= (async () => {
-      const h = await this.#loadHeader();
-      return enumerateTiles((o, l) => this.reader.read(o, l), h);
-    })());
+  _loadEntries() {
+    if (this._entriesP == null) {
+      this._entriesP = (async () => {
+        const h = await this._loadHeader();
+        return enumerateTiles((o, l) => this.reader.read(o, l), h);
+      })();
+    }
+    return this._entriesP;
   }
 
-  async #buildTiles(expand) {
-    const h = await this.#loadHeader();
-    const entries = await this.#loadEntries();
+  async _buildTiles(expand) {
+    const h = await this._loadHeader();
+    const entries = await this._loadEntries();
     const tiles = [];
     for (const e of entries) {
       const count = expand ? e.runLength : 1;
@@ -65,7 +70,7 @@ class Pmtile {
 
   /** Parsed 127-byte header plus tileTypeName and dedupRatio. */
   header() {
-    return this.#loadHeader();
+    return this._loadHeader();
   }
 
   /**
@@ -73,12 +78,12 @@ class Pmtile {
    * covered by run-length entries (needed for an accurate pyramid).
    */
   tiles({ expand = false } = {}) {
-    return this.#buildTiles(expand);
+    return this._buildTiles(expand);
   }
 
   /** Directory-walk counts: entries, shared runs, expanded tile total. */
   async stats() {
-    const entries = await this.#loadEntries();
+    const entries = await this._loadEntries();
     return {
       entryCount: entries.length,
       sharedEntryCount: entries.filter((e) => e.runLength > 1).length,
@@ -88,13 +93,16 @@ class Pmtile {
 
   /** Per-zoom tile counts with x/y extent and geographic bbox. */
   async pyramid() {
-    return getPyramid(await this.#buildTiles(true));
+    return getPyramid(await this._buildTiles(true));
   }
 
-  /** Decode a single tile (from `tiles()`) into per-layer GeoJSON. */
+  /**
+   * Decode a single tile (from `tiles()`).
+   * MVT archives return per-layer GeoJSON; raster archives return decompressed bytes.
+   */
   async getTile(tile) {
-    const h = await this.#loadHeader();
-    return readTile(this.reader, h.tileCompression, tile);
+    const h = await this._loadHeader();
+    return readTile(this.reader, h.tileCompression, h.tileType, tile);
   }
 
   /** Release the underlying reader (closes the file handle for fromFile). */
@@ -103,4 +111,4 @@ class Pmtile {
   }
 }
 
-export default Pmtile;
+export default PmTile;

@@ -5,12 +5,24 @@ const tile2lat = (y, z) => {
   return (180 / Math.PI) * Math.atan(0.5 * (Math.exp(n) - Math.exp(-n)));
 };
 
+/** True when this zoom level spans the full Web Mercator tile grid. */
+const isWholePlanet = (z, count, minX, maxX, minY, maxY) => {
+  const n = 2 ** z;
+  return (
+    count === n * n &&
+    minX === 0 &&
+    maxX === n - 1 &&
+    minY === 0 &&
+    maxY === n - 1
+  );
+};
+
 /** Geographic bounds for a tile extent. @returns {[west, south, east, north]} */
 const tileBBox = (z, minX, maxX, minY, maxY) => [
-  tile2lon(minX, z),        // west  = left edge
-  tile2lat(minY, z),        // south = bottom edge (y grows southward)
-  tile2lon(maxX, z),        // east  = right edge
-  tile2lat(maxY, z),        // north = top edge
+  tile2lon(minX, z),          // west  = left edge of westernmost tile
+  tile2lat(maxY + 1, z),      // south = bottom edge of southernmost tile
+  tile2lon(maxX + 1, z),      // east  = right edge of easternmost tile
+  tile2lat(minY, z),          // north = top edge of northernmost tile
 ];
 
 /**
@@ -18,7 +30,7 @@ const tileBBox = (z, minX, maxX, minY, maxY) => [
  * Pass tiles from `parseFile(path, { expand: true })` so run-length entries
  * are expanded into individual tile addresses.
  * @param {Array<{ z: number, x: number, y: number }>} tiles
- * @returns {Array<{ z: number, count: number, minX: number, maxX: number, minY: number, maxY: number }>}
+ * @returns {Array<{ z: number, count: number, minX: number, maxX: number, minY: number, maxY: number, wholePlanet: boolean, bbox: [number, number, number, number] }>}
  */
 const getPyramid = (tiles) => {
   const levels = new Map();
@@ -40,11 +52,12 @@ const getPyramid = (tiles) => {
     .sort(([a], [b]) => a - b)
     .map(([z, { count, minX, maxX, minY, maxY }]) => ({
       z,
-      count,
+      tileCount: count,
       minX,
       maxX,
       minY,
       maxY,
+      wholePlanet: isWholePlanet(z, count, minX, maxX, minY, maxY),
       bbox: tileBBox(z, minX, maxX, minY, maxY),
     }));
 };
