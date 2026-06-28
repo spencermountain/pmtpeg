@@ -13,7 +13,7 @@ This library only supports v3 of this spec
 `npm install pmtpeg`
 
 ```js
-import { parseFile, getTile } from './src/index.js';
+import { parseFile, getTile } from 'pmtpeg';
 
 const myFile = './examples/edmonton.pmtiles';
 const { header, stats, tiles } = await parseFile(myFile, { expand: true });
@@ -90,7 +90,7 @@ header
 ```
 
 stats
-```json
+```jsonc
 {
   // Total tile entries found walking the root + all leaf directories.
   // Matches tileEntryCount above — good consistency check.
@@ -106,4 +106,33 @@ stats
 
 ```
 
+
+tiles
+```jsonc
+{
+  // Zoom level of this tile. z9 covers a region a few hundred km across —
+  // roughly metro-area scale.
+  "z": 9,
+  // Tile column at this zoom (0 to 2^9-1 = 0–511), counting east from the
+  // antimeridian.
+  "x": 94,
+  // Tile row at this zoom (0–511), counting south from the north edge (XYZ
+  // scheme, y=0 at top).
+  "y": 166,
+
+  // Absolute byte position of this tile's blob in the file. Already includes
+  // tileDataOffset, so you can Range-read straight from here.
+  "absOffset": 1763764,
+  // Size of the blob in bytes — the stored (gzipped, since tileCompression=2)
+  // length. Gunzip then protobuf-decode to get the MVT. ~38 KB.
+  "bytes": 38999,
+
+  // How many consecutive tile IDs this one entry covers. 1 = it represents
+  // exactly this single tile, no run.
+  "runLength": 1,
+  // Convenience flag: runLength > 1. false here, so this blob isn't reused
+  // across multiple coordinates — it's a unique tile at this z/x/y.
+  "shared": false
+}
+```
 MIT
