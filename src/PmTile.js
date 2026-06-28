@@ -62,16 +62,23 @@ class PmTile {
     };
     this._headerP = null;
     this._entriesP = null;
+    this._fileSize = null; // total bytes, known once the header is read
     this._dirCache = new Map(); // offset -> Promise<entries>, for tileAt descent
   }
 
   /**
    * Cumulative bytes and range reads pulled through the reader since this
    * archive was opened — handy for seeing how little of a remote file you fetch.
-   * @returns {{ reads: number, bytes: number }}
+   * `file_percentage` is bytes as a percent of the total file size (null until
+   * the header has been read).
+   * @returns {{ reads: number, bytes: number, file_percentage: number | null }}
    */
   usage() {
-    return { reads: this._io.reads, bytes: this._io.bytes };
+    const { reads, bytes } = this._io;
+    const file_percentage = this._fileSize
+      ? Math.round((bytes / this._fileSize) * 10000) / 100
+      : null;
+    return { reads, bytes, file_percentage };
   }
 
   /** Parsed 127-byte header plus tileTypeName and dedupRatio. */
@@ -80,6 +87,7 @@ class PmTile {
       this._headerP = (async () => {
         const buf = await this.reader.read(0, HEADER_BYTES);
         const h = parseHeader(buf);
+        this._fileSize = h.tileDataOffset + h.tileDataLength;
         return {
           ...h,
           tileTypeName: tileTypeName(h.tileType),

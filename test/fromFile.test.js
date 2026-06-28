@@ -61,18 +61,19 @@ test('getTile() decodes a tileAt() row into per-layer GeoJSON', opts, async () =
 test('stats() agrees with the header counts', opts, async () => {
   const h = await pm.header();
   const s = await pm.stats();
-  assert.equal(s.entryCount, h.tileEntryCount);
-  assert.equal(s.tileCount, h.addressedTileCount);
-  assert.ok(s.sharedEntryCount >= 0 && s.sharedEntryCount <= s.entryCount);
+  assert.equal(s.entry_count, h.tileEntryCount);
+  assert.equal(s.tile_count, h.addressedTileCount);
   assert.equal(s.filesize_bytes, h.tileDataOffset + h.tileDataLength);
   assert.equal(typeof s.filesize_nice, 'string');
 });
 
 test('usage() shows the suite sips the file rather than reading it all', opts, async () => {
-  const { reads, bytes } = pm.usage();
+  const { reads, bytes, file_percentage } = pm.usage();
   assert.ok(reads > 0 && bytes > 0);
   // ~79 MB file; everything above should touch well under 2 MB of it.
   assert.ok(bytes < 2_000_000, `read ${bytes} bytes`);
+  // bytes as a percent of the whole file — a tiny fraction.
+  assert.ok(file_percentage > 0 && file_percentage < 5, `read ${file_percentage}%`);
   await pm.close();
 });
 

@@ -1,12 +1,14 @@
-pmtiles are a neat way to compress map data into a single file, and sip bits of it politely from the client-side.
+[pmtiles](https://docs.protomaps.com/) are a neat way to compress map data into a single file, and sip little bits of it politely from the client-side, as the user zooms around.
 
 There are good official tools to pack geojson into this format.
 
-Once you have a pmtile, it can be complicated to understand what's inside of it. It's not just because of the compression, it's because features are repeated at different zoom levels, with different different resolutions.
+Once you have a pmtile, it can be complicated to understand what's inside of it. 
+
+It's not just because of the compression, it's because features are repeated at different zoom levels, with different different resolutions.
 
 This library provides a way to parse a pmtiles file and get the header and individual tiles.
 
-This library only supports v3 of this spec
+This library works on the client side and on server side. Like pmtiles themselves, it works by only downloading what it needs, and avoids downloading the whole file
 
 ### Usage
 
@@ -150,13 +152,10 @@ stats
 {
   // Total tile entries found walking the root + all leaf directories.
   // Matches tileEntryCount above — good consistency check.
-  "entryCount": 70029,
-  // How many of those entries have runLength > 1, i.e. one stored blob reused
-  // across multiple consecutive tile IDs. 1762 of 70029 (~2.5%) are shared runs.
-  "sharedEntryCount": 1762,
+  "entry_count": 70029,
   // Total addressed tiles, summing each entry's runLength — i.e. directory
   // entries expanded into individual coordinates. Matches addressedTileCount.
-  "tileCount": 73048,
+  "tile_count": 73048,
   // Total size of the archive in bytes (tileDataOffset + tileDataLength).
   "filesize_bytes": 78994205,
   // Same value, human-readable.

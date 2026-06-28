@@ -20,12 +20,13 @@ console.log(tiles[40]);
 // const tile = await pm.getTile(tiles[40]);
 // console.log(tile);
 
-// console.log(await pm.pyramid());
+console.log(await pm.pyramid());
 
 const tileAt = await pm.tileAt(9, 82, 177);
 console.log({ tileAt });
 
 console.log(await pm.stats());
+console.log(pm.usage());
 
 await pm.close();
 console.log('closed');

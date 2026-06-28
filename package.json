@@ -10,7 +10,7 @@
     }
   },
   "files": [
-    "build"
+    "builds"
   ],
   "engines": {
     "node": ">=18"
