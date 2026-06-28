@@ -5,8 +5,8 @@
   "type": "module",
   "exports": {
     ".": {
-      "browser": "./build/pmtpeg.browser.js",
-      "default": "./build/pmtpeg.js"
+      "browser": "./builds/pmtpeg.browser.js",
+      "default": "./builds/pmtpeg.js"
     }
   },
   "files": [

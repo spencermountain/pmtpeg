@@ -64,6 +64,8 @@ test('stats() agrees with the header counts', opts, async () => {
   assert.equal(s.entryCount, h.tileEntryCount);
   assert.equal(s.tileCount, h.addressedTileCount);
   assert.ok(s.sharedEntryCount >= 0 && s.sharedEntryCount <= s.entryCount);
+  assert.equal(s.filesize_bytes, h.tileDataOffset + h.tileDataLength);
+  assert.equal(typeof s.filesize_nice, 'string');
 });
 
 test('usage() shows the suite sips the file rather than reading it all', opts, async () => {

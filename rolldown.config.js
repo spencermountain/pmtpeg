@@ -10,7 +10,7 @@ export default defineConfig([
       'node:fs/promises',
     ],
     output: {
-      file: 'build/pmtpeg.js',
+      file: 'builds/pmtpeg.js',
       minify: true,
       format: 'esm',
     },
@@ -24,7 +24,7 @@ export default defineConfig([
       'node:fs/promises',
     ],
     output: {
-      file: 'build/pmtpeg.browser.js',
+      file: 'builds/pmtpeg.browser.js',
       minify: true,
       format: 'esm',
     },

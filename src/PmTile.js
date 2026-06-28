@@ -9,6 +9,16 @@ import { tileTypeName } from './parse/tile-type.js';
 
 const HEADER_BYTES = 127;
 
+/** Format a byte count as a short human-readable string, e.g. 78994205 -> "78.99 MB". */
+const niceBytes = (n) => {
+  const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+  let v = n;
+  let i = 0;
+  while (v >= 1000 && i < units.length - 1) { v /= 1000; i += 1; }
+  const value = i === 0 ? Math.round(v) : Math.round(v * 100) / 100;
+  return `${value} ${units[i]}`;
+};
+
 /**
  * Find the entry in a single (sorted) directory that covers `id`: an exact
  * match, the leaf-pointer whose range contains it, or the run that covers it.
@@ -168,13 +178,16 @@ class PmTile {
     throw new Error('directory recursion too deep');
   }
 
-  /** Directory-walk counts: entries, shared runs, expanded tile total. */
+  /** Directory-walk counts, plus the archive's total file size. */
   async stats() {
+    const h = await this.header();
     const entries = await this.entries();
+    const filesize_bytes = h.tileDataOffset + h.tileDataLength;
     return {
-      entryCount: entries.length,
-      sharedEntryCount: entries.filter((e) => e.runLength > 1).length,
-      tileCount: entries.reduce((sum, e) => sum + e.runLength, 0),
+      entry_count: entries.length,
+      tile_count: entries.reduce((sum, e) => sum + e.runLength, 0),
+      filesize_bytes,
+      filesize_nice: niceBytes(filesize_bytes),
     };
   }
 

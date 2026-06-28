@@ -25,5 +25,7 @@ console.log(tiles[40]);
 const tileAt = await pm.tileAt(9, 82, 177);
 console.log({ tileAt });
 
+console.log(await pm.stats());
+
 await pm.close();
 console.log('closed');

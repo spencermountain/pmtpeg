@@ -156,7 +156,11 @@ stats
   "sharedEntryCount": 1762,
   // Total addressed tiles, summing each entry's runLength — i.e. directory
   // entries expanded into individual coordinates. Matches addressedTileCount.
-  "tileCount": 73048
+  "tileCount": 73048,
+  // Total size of the archive in bytes (tileDataOffset + tileDataLength).
+  "filesize_bytes": 78994205,
+  // Same value, human-readable.
+  "filesize_nice": "78.99 MB"
 }
 
 ```
