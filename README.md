@@ -1,12 +1,15 @@
-[pmtiles](https://docs.protomaps.com/) are a neat way to compress map data into a single file, and sip little bits of it politely from the client-side, as the user zooms around.
+[pmtiles](https://docs.protomaps.com/) are a neat way to compress map data into a single file. 
 
-There are good official tools to pack geojson into this format.
+The user can sip little bits of it politely from the client-side, as they zoom around.
+
+There are good official tools to pack geojson into this format, like [tippecanoe](https://github.com/mapbox/tippecanoe) or [mapbox-vector-tile-js](https://github.com/mapbox/mapbox-vector-tile-js).
 
 Once you have a pmtile, it can be complicated to understand what's inside of it. 
+That's where this library comes in.
 
-It's not just because of the compression, it's because features are repeated at different zoom levels, with different different resolutions.
+It's not just because of the compression, it's because features are repeated at different zoom levels, each with different different resolutions.
 
-This library provides a way to parse a pmtiles file and get the header and individual tiles.
+This library provides a way to parse a pmtiles file and get stats and individual tiles. It lets you poke around, in what is normally opaque.
 
 This library works on the client side and on server side. Like pmtiles themselves, it works by only downloading what it needs, and avoids downloading the whole file
 
