@@ -7,6 +7,7 @@ export default defineConfig([
     external: [
       '@mapbox/vector-tile',
       'pbf',
+      'node:fs/promises',
     ],
     output: {
       file: 'build/pmtpeg.js',
@@ -20,6 +21,7 @@ export default defineConfig([
     external: [
       '@mapbox/vector-tile',
       'pbf',
+      'node:fs/promises',
     ],
     output: {
       file: 'build/pmtpeg.browser.js',

@@ -1,9 +1,12 @@
 /** Parse the 127-byte header into the offsets/lengths and metadata we need. */
 const parseHeader = (buf) => {
-  if (buf.toString('ascii', 0, 7) !== 'PMTiles') throw new Error('not a PMTiles file (bad magic)');
-  const v = buf.readUInt8(7);
+  const dv = new DataView(buf.buffer, buf.byteOffset, buf.byteLength);
+  let magic = '';
+  for (let i = 0; i < 7; i++) magic += String.fromCharCode(dv.getUint8(i));
+  if (magic !== 'PMTiles') throw new Error('not a PMTiles file (bad magic)');
+  const v = dv.getUint8(7);
   if (v !== 3) throw new Error(`only PMTiles v3 supported (got v${v})`);
-  const rl = (o) => Number(buf.readBigUInt64LE(o));
+  const rl = (o) => Number(dv.getBigUint64(o, true));
   return {
     rootDirOffset: rl(8),
     rootDirLength: rl(16),
@@ -16,11 +19,11 @@ const parseHeader = (buf) => {
     addressedTileCount: rl(72),
     tileEntryCount: rl(80),
     tileContentCount: rl(88),
-    internalCompression: buf.readUInt8(97),
-    tileCompression: buf.readUInt8(98),
-    tileType: buf.readUInt8(99),
-    minZoom: buf.readUInt8(100),
-    maxZoom: buf.readUInt8(101),
+    internalCompression: dv.getUint8(97),
+    tileCompression: dv.getUint8(98),
+    tileType: dv.getUint8(99),
+    minZoom: dv.getUint8(100),
+    maxZoom: dv.getUint8(101),
   };
 };
 

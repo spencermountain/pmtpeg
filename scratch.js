@@ -1,12 +1,16 @@
-import { parseFile, getTile, getPyramid } from './src/index.js';
+import { fromFile } from './src/index.js';
 
-const result = await parseFile('./examples/edmonton.pmtiles', { expand: true });
-console.log(result.header);
-console.log(result.stats);
+const pm = fromFile('./examples/edmonton.pmtiles');
 
-console.log(result.tiles[40]);
-const tile = await getTile('./examples/edmonton.pmtiles', result.tiles[40]);
-// console.log(JSON.stringify(tile, null, 2));
+console.log(await pm.header());
+console.log(await pm.stats());
+
+const tiles = await pm.tiles({ expand: true });
+console.log(tiles[40]);
+
+const tile = await pm.getTile(tiles[40]);
 console.log(tile);
 
-console.log(getPyramid(result.tiles));
+console.log(await pm.pyramid());
+
+await pm.close();

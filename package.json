@@ -4,7 +4,10 @@
   "description": "Utility library for pmtile map files",
   "type": "module",
   "exports": {
-    ".": "./build/pmtpeg.js"
+    ".": {
+      "browser": "./build/pmtpeg.browser.js",
+      "default": "./build/pmtpeg.js"
+    }
   },
   "files": [
     "build"

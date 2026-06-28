@@ -13,20 +13,37 @@ This library only supports v3 of this spec
 `npm install pmtpeg`
 
 ```js
-import { parseFile, getTile, getPyramid } from 'pmtpeg';
+import pmtpeg from 'pmtpeg';
 
-const myFile = './examples/edmonton.pmtiles';
-const { header, stats, tiles } = await parseFile(myFile, { expand: true });
+// open from a local file (Node)...
+const pm = pmtpeg.fromFile('./examples/edmonton.pmtiles');
+// ...or from a URL via HTTP range requests (browser or Node)
+// const pm = pmtpeg.fromUrl('https://example.com/edmonton.pmtiles');
 
-// get the 40th tile
-const tile = await getTile(myFile, tiles[40]);
+// either way, the same API:
+const header = await pm.header();
+const stats = await pm.stats();
+
+// tile address list — pass { expand: true } to count run-length runs individually
+const tiles = await pm.tiles({ expand: true });
+
+// decode the 40th tile into per-layer GeoJSON
+const tile = await pm.getTile(tiles[40]);
 console.log(tile);
 
 // counts for individual zoom levels and their extents
-const pyramid = getPyramid(tiles);
+const pyramid = await pm.pyramid();
 console.log(pyramid);
 
+await pm.close(); // releases the file handle (no-op for fromUrl)
 ```
+
+Both `fromFile` and `fromUrl` only read the byte ranges they need — the header and
+directory index up front, then individual tiles on demand — so a multi-megabyte
+archive on a remote URL is never downloaded whole.
+
+Tiles and directories must be gzip-compressed (the PMTiles default); brotli and
+zstd are not supported in the browser.
 
 ### Details
 ```jsonc
@@ -102,10 +119,9 @@ stats
   // How many of those entries have runLength > 1, i.e. one stored blob reused
   // across multiple consecutive tile IDs. 1762 of 70029 (~2.5%) are shared runs.
   "sharedEntryCount": 1762,
-  // Tiles counted by your walker. Equals entryCount here because the walk counts
-  // entries (not expanded addresses); if it expanded run-lengths this would
-  // instead approach addressedTileCount (73048).
-  "tileCount": 70029
+  // Total addressed tiles, summing each entry's runLength — i.e. directory
+  // entries expanded into individual coordinates. Matches addressedTileCount.
+  "tileCount": 73048
 }
 
 ```

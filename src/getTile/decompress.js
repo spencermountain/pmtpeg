@@ -15,10 +15,3 @@ export const decompressTile = async (buf, compression) => {
     default: throw new Error(`unknown tile compression byte: ${compression}`);
   }
 };
-
-/** Read the tileCompression byte from the 127-byte header. */
-export const readTileCompression = async (fh) => {
-  const b = Buffer.alloc(1);
-  await fh.read(b, 0, 1, 98);
-  return b.readUInt8(0);
-};
