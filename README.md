@@ -27,6 +27,9 @@ const stats = await pm.stats();
 // tile address list — pass { expand: true } to count run-length runs individually
 const tiles = await pm.tiles({ expand: true });
 
+// look up a single tile by coordinate — same row shape as tiles(), or null if absent
+const one = await pm.tileAt(94, 166, 9); // (x, y, z)
+
 // decode the 40th tile. MVT archives return per-layer GeoJSON ({ z, x, y, layers });
 // raster archives (png/jpeg/webp/avif) return decompressed bytes ({ z, x, y, format, data }).
 const tile = await pm.getTile(tiles[40]);

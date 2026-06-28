@@ -6,16 +6,6 @@ import { tileTypeName } from '../parse/tile-type.js';
 import { VectorTile } from '@mapbox/vector-tile';
 import { PbfReader } from 'pbf';
 
-/**
- * @param {{ read(offset:number,length:number):Promise<Uint8Array> }} reader
- * @param {number} compression  tileCompression byte from the header (1=none 2=gzip)
- * @param {number} tileType     tileType byte from the header (1=mvt 2=png …)
- * @param {{z:number,x:number,y:number,absOffset:number,bytes:number}} tile
- * @returns {Promise<
- *   | {z:number,x:number,y:number,layers:Object<string,{type:'FeatureCollection',features:Array}>}
- *   | {z:number,x:number,y:number,format:string,data:Uint8Array}
- * >}
- */
 export const readTile = async (reader, compression, tileType, tile) => {
   const { z, x, y, absOffset, bytes } = tile;
   const raw = await reader.read(absOffset, bytes);

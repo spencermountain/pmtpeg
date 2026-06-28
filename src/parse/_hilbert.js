@@ -23,3 +23,27 @@ const tileIdToZxy = (id) => {
   return { z: Number(z), x: Number(x), y: Number(y) };
 };
 export default tileIdToZxy;
+
+/** Forward Hilbert: {z,x,y} -> tileId. Inverse of tileIdToZxy. */
+export const zxyToTileId = (z, x, y) => {
+  z = BigInt(z); x = BigInt(x); y = BigInt(y);
+  const n = 1n << z;
+  if (x < 0n || y < 0n || x >= n || y >= n) {
+    throw new Error(`tile ${x}/${y} is out of range for zoom ${z}`);
+  }
+  // Base offset: count of all tiles in zooms below z (sum of 4^i for i<z).
+  let acc = 0n;
+  for (let i = 0n; i < z; i++) acc += (1n << i) * (1n << i);
+  let d = 0n;
+  for (let s = n >> 1n; s > 0n; s >>= 1n) {
+    const rx = (x & s) > 0n ? 1n : 0n;
+    const ry = (y & s) > 0n ? 1n : 0n;
+    d += s * s * ((3n * rx) ^ ry);
+    // rotate the quadrant
+    if (ry === 0n) {
+      if (rx === 1n) { x = n - 1n - x; y = n - 1n - y; }
+      [x, y] = [y, x];
+    }
+  }
+  return acc + d;
+};

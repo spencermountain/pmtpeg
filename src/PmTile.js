@@ -1,6 +1,6 @@
 import parseHeader from './parse/get-header.js';
 import { enumerateTiles } from './parse/get-tiles/index.js';
-import tileIdToZxy from './parse/_hilbert.js';
+import tileIdToZxy, { zxyToTileId } from './parse/_hilbert.js';
 import { readTile } from './getTile/index.js';
 import getPyramid from './getPyramid/index.js';
 import { tileTypeName } from './parse/tile-type.js';
@@ -69,6 +69,40 @@ class PmTile {
       }
     }
     return tiles;
+  }
+
+  /**
+   * Look up the single tile at a coordinate, returning the same row shape as
+   * `tiles()` ({ z, x, y, absOffset, bytes, runLength, shared }), or `null`
+   * if no tile is stored there. Pass the result to `getTile()` to decode it.
+   */
+  async tileAt(x, y, z) {
+    const h = await this.header();
+    const entries = await this.entries();
+    const id = zxyToTileId(z, x, y);
+
+    // entries are sorted by tileId; binary-search the run that covers `id`.
+    let lo = 0;
+    let hi = entries.length - 1;
+    let found = null;
+    while (lo <= hi) {
+      const mid = (lo + hi) >> 1;
+      const e = entries[mid];
+      if (id < e.tileId) hi = mid - 1;
+      else if (id >= e.tileId + BigInt(e.runLength)) lo = mid + 1;
+      else { found = e; break; }
+    }
+    if (found == null) return null;
+
+    return {
+      z,
+      x,
+      y,
+      absOffset: h.tileDataOffset + Number(found.offset),
+      bytes: found.length,
+      runLength: found.runLength,
+      shared: found.runLength > 1,
+    };
   }
 
   /** Directory-walk counts: entries, shared runs, expanded tile total. */
