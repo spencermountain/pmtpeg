@@ -1,10 +1,12 @@
 {
   "name": "pmtpeg",
   "version": "0.0.1",
-  "description": "Utility library for pmtile map files",
+  "description": "Utility library for parsing, inspecting and debugging pmtiles map files",
   "type": "module",
+  "types": "./builds/pmtpeg.d.ts",
   "exports": {
     ".": {
+      "types": "./builds/pmtpeg.d.ts",
       "browser": "./builds/pmtpeg.browser.js",
       "default": "./builds/pmtpeg.js"
     }
@@ -21,8 +23,19 @@
     "watch": "node scratch.js",
     "build": "rolldown -c"
   },
-  "keywords": [],
-  "author": "",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/spencermountain/pmtpeg.git"
+  },
+  "keywords": [
+    "pmtiles",
+    "maps",
+    "mvt",
+    "vector-tiles",
+    "protomaps",
+    "tippecanoe"
+  ],
+  "author": "spencer kelly <spencerkelly86@gmail.com>",
   "dependencies": {
     "@mapbox/vector-tile": "3.0.0",
     "pbf": "5.1.0"

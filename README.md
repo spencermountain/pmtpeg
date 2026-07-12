@@ -29,6 +29,11 @@ const pm = fromFile('./examples/edmonton.pmtiles');
 const header = await pm.header();
 const stats = await pm.stats();
 
+// the JSON metadata blob — layer definitions, attribution, generator info
+const meta = await pm.metadata();
+console.log(meta.vector_layers.map((l) => l.id));
+// ['boundaries', 'buildings', 'earth', 'landcover', 'landuse', ...]
+
 // array of all tiles — pass { expand: true } to count run-length runs individually
 const tiles = await pm.allTiles({ expand: true });
 
@@ -44,6 +49,10 @@ console.log(tile);
 const pyramid = await pm.pyramid();
 console.log(pyramid);
 
+// how much of the file have we actually touched?
+console.log(pm.usage());
+// { reads: 12, bytes: 190244, transferred: 190244, file_percentage: 0.24 }
+
 await pm.close(); // releases the file handle (no-op for fromUrl)
 ```
 
@@ -51,8 +60,26 @@ Both `fromFile` and `fromUrl` only read the byte ranges they need — the header
 directory index up front, then individual tiles on demand — so a multi-megabyte
 archive on a remote URL is never downloaded whole.
 
-Tiles and directories must be gzip-compressed (the PMTiles default); brotli and
-zstd are not supported in the browser.
+Gzip (the PMTiles default) works everywhere. Brotli- and zstd-compressed
+archives work in Node (zstd needs Node ≥ 22.15) but not in the browser —
+re-export those as gzip for client-side use.
+
+### Big archives
+
+`allTiles()`, `stats()` and `pyramid()` walk the whole directory index and hold
+it in memory. On planet-scale archives (hundreds of millions of entries) that
+would mean downloading hundreds of MB of directories, so they refuse above
+~10M entries — pass `{ force: true }` to override, or stream instead:
+
+```js
+for await (const row of pm.iterTiles()) {
+  // one { z, x, y, absOffset, bytes, runLength, shared } at a time,
+  // in tileId order, without materializing the whole list
+}
+```
+
+`tileAt()` and `getTile()` have no such limit — they read a couple of KB no
+matter how large the archive is.
 
 ### Looking up a single tile
 
@@ -124,6 +151,10 @@ header
   // (e.g. blank ocean) are deduplicated to a single blob.
   "tileContentCount": 65414,
 
+  // True when tile blobs are laid out in tile-id order — lets readers
+  // coalesce adjacent fetches.
+  "clustered": true,
+
   // Compression used for the directories and JSON metadata.
   // (1=none, 2=gzip, 3=brotli, 4=zstd)
   "internalCompression": 2,
@@ -140,8 +171,20 @@ header
   // Highest zoom level present — z15 is roughly city-block detail.
   "maxZoom": 15,
 
+  // Geographic extent of the data, in degrees.
+  "minLon": -114.9198694,
+  "minLat": 52.8627507,
+  "maxLon": -111.9973434,
+  "maxLat": 54.1940813,
+  // Suggested starting view for a map of this archive.
+  "centerZoom": 0,
+  "centerLon": -113.4586064,
+  "centerLat": 53.528416,
+
   // Human-readable form of tileType, derived from the byte above.
   "tileTypeName": "mvt",
+  // The extent above as a [west, south, east, north] array.
+  "bounds": [-114.9198694, 52.8627507, -111.9973434, 54.1940813],
   // addressedTileCount / tileContentCount: ~1.12 addressed tiles per stored blob,
   // i.e. deduplication saved ~10% of tiles. Modest here; basemaps with lots of
   // empty ocean tiles see much higher ratios.
