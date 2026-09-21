@@ -1,3 +1,5 @@
+/* eslint-disable no-bitwise */
+
 /**
  * Read a varint (LEB128) from `buf` starting at state.p; advances state.p.
  * Plain-number math: each 7-bit group is added via multiplication, which stays

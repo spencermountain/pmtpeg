@@ -1,29 +1,33 @@
-import parseHeader from './parse/get-header.js';
-import { enumerateTiles } from './parse/get-tiles/index.js';
-import { decompress } from './decompress.js';
-import { deserializeDirectory } from './parse/get-tiles/directory.js';
-import tileIdToZxy, { zxyToTileId, MAX_ZOOM } from './parse/_hilbert.js';
-import { readTile } from './getTile/index.js';
-import getPyramid from './getPyramid/index.js';
-import { tileTypeName } from './parse/tile-type.js';
+/* eslint-disable no-bitwise */
+import parseHeader from './parse/get-header.js'
+import { enumerateTiles } from './parse/get-tiles/index.js'
+import { decompress } from './decompress.js'
+import { deserializeDirectory } from './parse/get-tiles/directory.js'
+import tileIdToZxy, { zxyToTileId, MAX_ZOOM } from './parse/_hilbert.js'
+import { readTile } from './getTile/index.js'
+import getPyramid from './getPyramid/index.js'
+import { tileTypeName } from './parse/tile-type.js'
 
-const HEADER_BYTES = 127;
+const HEADER_BYTES = 127
 
 // Walking every directory entry means materializing them all in memory (and,
 // for fromUrl, downloading the whole leaf-directory section). Planet-scale
 // archives have hundreds of millions of entries — refuse those by default.
-const MAX_WALK_ENTRIES = 10_000_000;
-const MAX_WALK_LEAF_BYTES = 32 * 1024 * 1024;
+const MAX_WALK_ENTRIES = 10_000_000
+const MAX_WALK_LEAF_BYTES = 32 * 1024 * 1024
 
 /** Format a byte count as a short human-readable string, e.g. 78994205 -> "78.99 MB". */
 const niceBytes = (n) => {
-  const units = ['B', 'KB', 'MB', 'GB', 'TB'];
-  let v = n;
-  let i = 0;
-  while (v >= 1000 && i < units.length - 1) { v /= 1000; i += 1; }
-  const value = i === 0 ? Math.round(v) : Math.round(v * 100) / 100;
-  return `${value} ${units[i]}`;
-};
+  const units = ['B', 'KB', 'MB', 'GB', 'TB']
+  let v = n
+  let i = 0
+  while (v >= 1000 && i < units.length - 1) {
+    v /= 1000
+    i += 1
+  }
+  const value = i === 0 ? Math.round(v) : Math.round(v * 100) / 100
+  return `${value} ${units[i]}`
+}
 
 /**
  * Find the entry in a single (sorted) directory that covers `id`: an exact
@@ -31,22 +35,22 @@ const niceBytes = (n) => {
  * Returns null when `id` falls in a gap. Mirrors the PMTiles reference search.
  */
 const findTile = (entries, id) => {
-  let m = 0;
-  let n = entries.length - 1;
+  let m = 0
+  let n = entries.length - 1
   while (m <= n) {
-    const k = (m + n) >> 1;
-    const t = entries[k].tileId;
-    if (id > t) m = k + 1;
-    else if (id < t) n = k - 1;
-    else return entries[k];
+    const k = (m + n) >> 1
+    const t = entries[k].tileId
+    if (id > t) m = k + 1
+    else if (id < t) n = k - 1
+    else return entries[k]
   }
   if (n >= 0) {
-    const e = entries[n];
-    if (e.runLength === 0) return e;          // leaf-directory pointer
-    if (id - e.tileId < e.runLength) return e; // inside this run
+    const e = entries[n]
+    if (e.runLength === 0) return e // leaf-directory pointer
+    if (id - e.tileId < e.runLength) return e // inside this run
   }
-  return null;
-};
+  return null
+}
 
 /** The row shape shared by allTiles(), iterTiles() and tileAt(). */
 const toRow = (h, e, z, x, y) => ({
@@ -56,8 +60,8 @@ const toRow = (h, e, z, x, y) => ({
   absOffset: h.tileDataOffset + e.offset,
   bytes: e.length,
   runLength: e.runLength,
-  shared: e.runLength > 1,
-});
+  shared: e.runLength > 1
+})
 
 /**
  * PMTiles API. The header, directory walk, metadata and pyramid are each read
@@ -67,25 +71,25 @@ const toRow = (h, e, z, x, y) => ({
 class PmTile {
   constructor(reader) {
     // Wrap the reader so every range read is tallied — exposed via usage().
-    this._io = { reads: 0, bytes: 0 };
-    this._raw = reader;
+    this._io = { reads: 0, bytes: 0 }
+    this._raw = reader
     this.reader = {
       read: async (offset, length) => {
-        const buf = await reader.read(offset, length);
-        this._io.reads += 1;
-        this._io.bytes += buf.byteLength;
-        return buf;
+        const buf = await reader.read(offset, length)
+        this._io.reads += 1
+        this._io.bytes += buf.byteLength
+        return buf
       },
-      close: () => reader.close(),
-    };
-    this._headerP = null;
-    this._entriesP = null;
-    this._metadataP = null;
-    this._tilesP = null;         // cached allTiles({expand:false})
-    this._tilesExpandedP = null; // cached allTiles({expand:true})
-    this._pyramidP = null;
-    this._fileSize = null; // total bytes, known once the header is read
-    this._dirCache = new Map(); // offset -> Promise<entries>, for tileAt descent
+      close: () => reader.close()
+    }
+    this._headerP = null
+    this._entriesP = null
+    this._metadataP = null
+    this._tilesP = null // cached allTiles({expand:false})
+    this._tilesExpandedP = null // cached allTiles({expand:true})
+    this._pyramidP = null
+    this._fileSize = null // total bytes, known once the header is read
+    this._dirCache = new Map() // offset -> Promise<entries>, for tileAt descent
   }
 
   /**
@@ -98,69 +102,72 @@ class PmTile {
    * @returns {{ reads: number, bytes: number, transferred: number, file_percentage: number | null }}
    */
   usage() {
-    const { reads, bytes } = this._io;
-    const transferred = this._raw.transferred ? this._raw.transferred() : bytes;
+    const { reads, bytes } = this._io
+    const transferred = this._raw.transferred ? this._raw.transferred() : bytes
     const file_percentage = this._fileSize
       ? Math.round((transferred / this._fileSize) * 10000) / 100
-      : null;
-    return { reads, bytes, transferred, file_percentage };
+      : null
+    return { reads, bytes, transferred, file_percentage }
   }
 
   /** Parsed 127-byte header plus tileTypeName, dedupRatio and a [w,s,e,n] bounds array. */
   header() {
     if (this._headerP == null) {
       this._headerP = (async () => {
-        let h;
+        let h
         try {
-          const buf = await this.reader.read(0, HEADER_BYTES);
-          h = parseHeader(buf);
+          const buf = await this.reader.read(0, HEADER_BYTES)
+          h = parseHeader(buf)
         } catch (err) {
           // a bad file leaves nothing worth keeping open — release the handle
-          await this.close().catch(() => {});
-          throw err;
+          await this.close().catch(() => {})
+          throw err
         }
-        this._fileSize = h.tileDataOffset + h.tileDataLength;
+        this._fileSize = h.tileDataOffset + h.tileDataLength
         return {
           ...h,
           tileTypeName: tileTypeName(h.tileType),
           dedupRatio: h.addressedTileCount / Math.max(1, h.tileContentCount),
-          bounds: [h.minLon, h.minLat, h.maxLon, h.maxLat],
-        };
-      })();
+          bounds: [h.minLon, h.minLat, h.maxLon, h.maxLat]
+        }
+      })()
     }
-    return this._headerP;
+    return this._headerP
   }
 
   /** The JSON metadata blob — vector_layers, attribution, name, generator info, etc. */
   metadata() {
     if (this._metadataP == null) {
       this._metadataP = (async () => {
-        const h = await this.header();
-        if (h.jsonMetadataLength === 0) return {};
-        const raw = await this.reader.read(h.jsonMetadataOffset, h.jsonMetadataLength);
-        const buf = await decompress(raw, h.internalCompression);
-        return JSON.parse(new TextDecoder().decode(buf));
-      })();
+        const h = await this.header()
+        if (h.jsonMetadataLength === 0) return {}
+        const raw = await this.reader.read(h.jsonMetadataOffset, h.jsonMetadataLength)
+        const buf = await decompress(raw, h.internalCompression)
+        return JSON.parse(new TextDecoder().decode(buf))
+      })()
     }
-    return this._metadataP;
+    return this._metadataP
   }
 
   entries({ force = false } = {}) {
     if (this._entriesP == null) {
       this._entriesP = (async () => {
-        const h = await this.header();
-        if (!force && (h.tileEntryCount > MAX_WALK_ENTRIES || h.leafDirLength > MAX_WALK_LEAF_BYTES)) {
-          this._entriesP = null; // don't cache the refusal — a force:true retry should work
+        const h = await this.header()
+        if (
+          !force &&
+          (h.tileEntryCount > MAX_WALK_ENTRIES || h.leafDirLength > MAX_WALK_LEAF_BYTES)
+        ) {
+          this._entriesP = null // don't cache the refusal — a force:true retry should work
           throw new Error(
             `archive has ${h.tileEntryCount.toLocaleString()} directory entries` +
-            ` (${niceBytes(h.leafDirLength)} of directories) — walking it all would use` +
-            ` GBs of memory. Use iterTiles() to stream, or pass { force: true }.`
-          );
+              ` (${niceBytes(h.leafDirLength)} of directories) — walking it all would use` +
+              ` GBs of memory. Use iterTiles() to stream, or pass { force: true }.`
+          )
         }
-        return enumerateTiles((o, l) => this.reader.read(o, l), h);
-      })();
+        return enumerateTiles((o, l) => this.reader.read(o, l), h)
+      })()
     }
-    return this._entriesP;
+    return this._entriesP
   }
 
   /**
@@ -169,26 +176,26 @@ class PmTile {
    * entries (needed for an accurate pyramid).
    */
   allTiles({ expand = false, force = false } = {}) {
-    const key = expand ? '_tilesExpandedP' : '_tilesP';
+    const key = expand ? '_tilesExpandedP' : '_tilesP'
     if (this[key] == null) {
       this[key] = (async () => {
-        const h = await this.header();
-        const entries = await this.entries({ force });
-        const tiles = [];
+        const h = await this.header()
+        const entries = await this.entries({ force })
+        const tiles = []
         for (const e of entries) {
-          const count = expand ? e.runLength : 1;
+          const count = expand ? e.runLength : 1
           for (let k = 0; k < count; k++) {
-            const { z, x, y } = tileIdToZxy(e.tileId + k);
-            tiles.push(toRow(h, e, z, x, y));
+            const { z, x, y } = tileIdToZxy(e.tileId + k)
+            tiles.push(toRow(h, e, z, x, y))
           }
         }
-        return tiles;
+        return tiles
       })().catch((err) => {
-        this[key] = null;
-        throw err;
-      });
+        this[key] = null
+        throw err
+      })
     }
-    return this[key];
+    return this[key]
   }
 
   /**
@@ -197,37 +204,37 @@ class PmTile {
    * Yields the same row shape as allTiles(), in tileId order.
    */
   async *iterTiles({ expand = false } = {}) {
-    const h = await this.header();
+    const h = await this.header()
     const walk = async function* (offset, length) {
-      const raw = await this.reader.read(offset, length);
-      const entries = deserializeDirectory(await decompress(raw, h.internalCompression));
+      const raw = await this.reader.read(offset, length)
+      const entries = deserializeDirectory(await decompress(raw, h.internalCompression))
       for (const e of entries) {
         if (e.runLength === 0) {
-          yield* walk.call(this, h.leafDirOffset + e.offset, e.length);
+          yield* walk.call(this, h.leafDirOffset + e.offset, e.length)
         } else {
-          const count = expand ? e.runLength : 1;
+          const count = expand ? e.runLength : 1
           for (let k = 0; k < count; k++) {
-            const { z, x, y } = tileIdToZxy(e.tileId + k);
-            yield toRow(h, e, z, x, y);
+            const { z, x, y } = tileIdToZxy(e.tileId + k)
+            yield toRow(h, e, z, x, y)
           }
         }
       }
-    };
-    yield* walk.call(this, h.rootDirOffset, h.rootDirLength);
+    }
+    yield* walk.call(this, h.rootDirOffset, h.rootDirLength)
   }
 
   /** Read + decompress + deserialize one directory blob, cached by offset. */
   _readDir(offset, length) {
-    let p = this._dirCache.get(offset);
+    let p = this._dirCache.get(offset)
     if (p == null) {
       p = (async () => {
-        const h = await this.header();
-        const raw = await this.reader.read(offset, length);
-        return deserializeDirectory(await decompress(raw, h.internalCompression));
-      })();
-      this._dirCache.set(offset, p);
+        const h = await this.header()
+        const raw = await this.reader.read(offset, length)
+        return deserializeDirectory(await decompress(raw, h.internalCompression))
+      })()
+      this._dirCache.set(offset, p)
     }
-    return p;
+    return p
   }
 
   /**
@@ -242,41 +249,41 @@ class PmTile {
    */
   async tileAt(z, x, y) {
     if (!Number.isInteger(z) || !Number.isInteger(x) || !Number.isInteger(y)) {
-      throw new Error(`tileAt(z, x, y) takes integers (got ${z}/${x}/${y})`);
+      throw new Error(`tileAt(z, x, y) takes integers (got ${z}/${x}/${y})`)
     }
-    if (z > MAX_ZOOM) throw new Error(`zoom ${z} is beyond z${MAX_ZOOM} (the max safe zoom)`);
-    if (z < 0 || x < 0 || y < 0 || x >= 2 ** z || y >= 2 ** z) return null;
-    const h = await this.header();
-    const id = zxyToTileId(z, x, y);
+    if (z > MAX_ZOOM) throw new Error(`zoom ${z} is beyond z${MAX_ZOOM} (the max safe zoom)`)
+    if (z < 0 || x < 0 || y < 0 || x >= 2 ** z || y >= 2 ** z) return null
+    const h = await this.header()
+    const id = zxyToTileId(z, x, y)
 
-    let offset = h.rootDirOffset;
-    let length = h.rootDirLength;
+    let offset = h.rootDirOffset
+    let length = h.rootDirLength
     for (let depth = 0; depth < 4; depth++) {
-      const entries = await this._readDir(offset, length);
-      const e = findTile(entries, id);
-      if (e == null) return null;
+      const entries = await this._readDir(offset, length)
+      const e = findTile(entries, id)
+      if (e == null) return null
       if (e.runLength === 0) {
         // leaf-directory pointer — descend one level and search again
-        offset = h.leafDirOffset + e.offset;
-        length = e.length;
-        continue;
+        offset = h.leafDirOffset + e.offset
+        length = e.length
+        continue
       }
-      return toRow(h, e, z, x, y);
+      return toRow(h, e, z, x, y)
     }
-    throw new Error('directory recursion too deep');
+    throw new Error('directory recursion too deep')
   }
 
   /** Directory-walk counts, plus the archive's total file size. */
   async stats({ force = false } = {}) {
-    const h = await this.header();
-    const entries = await this.entries({ force });
-    const filesize_bytes = h.tileDataOffset + h.tileDataLength;
+    const h = await this.header()
+    const entries = await this.entries({ force })
+    const filesize_bytes = h.tileDataOffset + h.tileDataLength
     return {
       entry_count: entries.length,
       tile_count: entries.reduce((sum, e) => sum + e.runLength, 0),
       filesize_bytes,
-      filesize_nice: niceBytes(filesize_bytes),
-    };
+      filesize_nice: niceBytes(filesize_bytes)
+    }
   }
 
   /** Per-zoom tile counts with x/y extent and geographic bbox. Cached after the first call. */
@@ -285,11 +292,11 @@ class PmTile {
       this._pyramidP = this.allTiles({ expand: true, force })
         .then(getPyramid)
         .catch((err) => {
-          this._pyramidP = null;
-          throw err;
-        });
+          this._pyramidP = null
+          throw err
+        })
     }
-    return this._pyramidP;
+    return this._pyramidP
   }
 
   /**
@@ -298,21 +305,23 @@ class PmTile {
    */
   async getTile(tile) {
     if (!tile || !Number.isFinite(tile.absOffset) || !Number.isFinite(tile.bytes)) {
-      throw new Error('getTile() takes a row from allTiles()/tileAt() — an object with absOffset and bytes');
+      throw new Error(
+        'getTile() takes a row from allTiles()/tileAt() — an object with absOffset and bytes'
+      )
     }
-    const h = await this.header();
-    return readTile(this.reader, h.tileCompression, h.tileType, tile);
+    const h = await this.header()
+    return readTile(this.reader, h.tileCompression, h.tileType, tile)
   }
 
   /** Release the underlying reader (closes the file handle for fromFile). */
   close() {
-    return this.reader.close();
+    return this.reader.close()
   }
 
   /** Support `await using pm = fromFile(...)` (explicit resource management). */
   async [Symbol.asyncDispose]() {
-    await this.close();
+    await this.close()
   }
 }
 
-export default PmTile;
+export default PmTile

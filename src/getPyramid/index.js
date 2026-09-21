@@ -6,6 +6,7 @@ const tile2lat = (y, z) => {
 };
 
 /** True when this zoom level spans the full Web Mercator tile grid. */
+// eslint-disable-next-line
 const isWholePlanet = (z, count, minX, maxX, minY, maxY) => {
   const n = 2 ** z;
   return (
