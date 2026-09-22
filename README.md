@@ -17,6 +17,12 @@ This library works on the client side and on server side. Like pmtiles themselve
 
 `npm install pmtpeg`
 
+CommonJS is also supported:
+
+```js
+const { fromFile, fromUrl } = require('pmtpeg');
+```
+
 ```js
 import { fromFile, fromUrl } from 'pmtpeg';
 

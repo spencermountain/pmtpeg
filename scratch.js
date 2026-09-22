@@ -5,7 +5,7 @@ const examples = [
   'https://overturemaps-tiles-us-west-2-beta.s3.amazonaws.com/2025-04-23/places.pmtiles',
   'https://air.mtn.tw/flowers.pmtiles',
   'https://r2-public.protomaps.com/protomaps-sample-datasets/tilezen.pmtiles',
-  'https://snip.spencermountain.dev/2025/07/vancouver.pmtiles',
+  'https://snip.spencermountain.dev/2025/maps/vancouver.pmtiles',
   'https://pmtiles.io/stamen_toner(raster)CC-BY+ODbL_z3.pmtiles'
 ]
 

@@ -3,13 +3,24 @@
   "version": "0.0.1",
   "description": "Utility library for parsing, inspecting and debugging pmtiles map files",
   "type": "module",
-  "main": "builds/pmtpeg.js",
-  "types": "./builds/pmtpeg.d.ts",
+  "main": "builds/pmtpeg.cjs",
+  "types": "./builds/pmtpeg.d.cts",
   "exports": {
     ".": {
-      "types": "./builds/pmtpeg.d.ts",
-      "browser": "./builds/pmtpeg.browser.js",
-      "default": "./builds/pmtpeg.js"
+      "require": {
+        "types": "./builds/pmtpeg.d.cts",
+        "default": "./builds/pmtpeg.cjs"
+      },
+      "import": {
+        "types": "./builds/pmtpeg.d.ts",
+        "browser": "./builds/pmtpeg.browser.js",
+        "default": "./builds/pmtpeg.js"
+      },
+      "default": {
+        "types": "./builds/pmtpeg.d.ts",
+        "browser": "./builds/pmtpeg.browser.js",
+        "default": "./builds/pmtpeg.js"
+      }
     }
   },
   "files": [
