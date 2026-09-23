@@ -2,9 +2,10 @@
   "name": "pmtpeg",
   "version": "0.0.1",
   "description": "Utility library for parsing, inspecting and debugging pmtiles map files",
+  "license": "MIT",
+  "repository": "github:spencermountain/pmtpeg",
+  "author": "Spencer Kelly <spencermountain@gmail.com> (https://spencermountain.dev)",
   "type": "module",
-  "main": "builds/pmtpeg.cjs",
-  "types": "./builds/pmtpeg.d.cts",
   "exports": {
     ".": {
       "require": {
@@ -23,20 +24,21 @@
       }
     }
   },
-  "files": [
-    "builds"
-  ],
+  "main": "./builds/pmtpeg.cjs",
+  "types": "./builds/pmtpeg.d.cts",
+  "sideEffects": false,
   "engines": {
     "node": ">=18"
   },
-  "sideEffects": false,
   "scripts": {
     "test": "node --test",
     "watch": "node scratch.js",
     "build": "rolldown -c",
     "lint": "eslint ."
   },
-  "repository": "github:spencermountain/pmtpeg",
+  "files": [
+    "builds"
+  ],
   "keywords": [
     "pmtiles",
     "maps",
@@ -45,7 +47,6 @@
     "protomaps",
     "tippecanoe"
   ],
-  "author": "Spencer Kelly <spencermountain@gmail.com> (https://spencermountain.dev)",
   "dependencies": {
     "@mapbox/vector-tile": "3.0.0",
     "pbf": "5.1.2"
@@ -53,6 +54,5 @@
   "devDependencies": {
     "eslint": "10.11.0",
     "rolldown": "^1.2.9"
-  },
-  "license": "MIT"
+  }
 }
